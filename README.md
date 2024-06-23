@@ -1,5 +1,5 @@
 # RepairLinks_FreeCAD
-A simple macro to repair broken links in FreeCAD files
+A simple macro to repair broken links in FreeCAD
 
 ## How to use
 - Having a file with broken links
