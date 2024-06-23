@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+# (c) MaxiV, 2024
+
+__Name__ = 'RepairLinks_FreeCAD'
+__Comment__ = 'A simple macro to repair broken links in FreeCAD'
+__Author__ = 'Maxi Vasquez'
+__Version__ = '0.1'
+__Date__ = '2024-06-23'
+__License__ = 'LGPL-2.0-or-later'
+
+import FreeCAD as App
+import FreeCADGui as Gui
+from PySide2 import QtWidgets, QtCore
+
+class RepairLinksDialog(QtWidgets.QDialog):
+    def __init__(self, broken_links, doc):
+        super().__init__()
+        self.setWindowTitle(f"{len(broken_links)} broken links found")
+        self.broken_links = broken_links
+        self.doc = doc
+        self.initUI()
+        
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout()
+        
+        self.link_buttons = {}
+        for link in self.broken_links:
+            link_layout = QtWidgets.QHBoxLayout()
+            link_label = QtWidgets.QLabel(link.Name)
+            repair_button = QtWidgets.QPushButton("Repair")
+            repair_button.clicked.connect(self.create_repair_link_func(link))
+            link_layout.addWidget(link_label)
+            link_layout.addWidget(repair_button)
+            layout.addLayout(link_layout)
+            self.link_buttons[link.Name] = (link_label, repair_button)
+        
+        self.finish_button = QtWidgets.QPushButton("Finish")
+        self.finish_button.clicked.connect(self.finish)
+        layout.addWidget(self.finish_button)
+        
+        self.setLayout(layout)
+        self.setMinimumWidth(300)  # Increase the minimum width of the window
+    
+    def create_repair_link_func(self, link):
+        # This function returns a lambda function to repair the specific link
+        return lambda: self.repair_link(link)
+    
+    def repair_link(self, link):
+        dialog = QtWidgets.QFileDialog(self)
+        dialog.setWindowTitle("Select the correct file for the broken link")
+        dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        dialog.setNameFilter("FreeCAD Files (*.FCStd)")
+        
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            selected_file = dialog.selectedFiles()[0]
+            if selected_file:
+                try:
+                    # Open the selected document
+                    linked_doc = App.openDocument(selected_file)
+                    # Assume the first object in the new file is the linked object
+                    linked_obj = linked_doc.Objects[0]
+                    # Reassign the linked object to the broken link
+                    link.LinkedObject = linked_obj
+                    # Recompute the active document
+                    App.ActiveDocument.recompute()
+                    # Update the button text to "Repaired" and disable it
+                    self.link_buttons[link.Name][1].setText("Repaired")
+                    self.link_buttons[link.Name][1].setEnabled(False)
+                    print(f"Link {link.Name} has been restored using the file {selected_file}.")
+                except Exception as e:
+                    print(f"Failed to open or find the object in the selected file: {e}")
+    
+    def finish(self):
+        # Recompute the document when finishing
+        self.doc.recompute()
+        self.accept()
+
+def check_links_and_repair():
+    doc = App.ActiveDocument
+    if doc is None:
+        print("No document is open.")
+        return
+
+    broken_links = []
+
+    # Find all Link objects in the document
+    for obj in doc.Objects:
+        if obj.TypeId == "App::Link":
+            if obj.LinkedObject is None:
+                broken_links.append(obj)
+
+    if not broken_links:
+        print("No broken links found.")
+        return
+    
+    # Create and show the dialog window to repair links
+    repair_dialog = RepairLinksDialog(broken_links, doc)
+    repair_dialog.exec_()
+
+check_links_and_repair()
