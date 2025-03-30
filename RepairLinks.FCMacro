@@ -4,13 +4,13 @@
 __Name__ = 'RepairLinks_FreeCAD'
 __Comment__ = 'A simple macro to repair broken links in FreeCAD'
 __Author__ = 'Maxi Vasquez'
-__Version__ = '0.1'
-__Date__ = '2024-06-23'
+__Version__ = '0.2'
+__Date__ = '2025-03-30'
 __License__ = 'LGPL-2.0-or-later'
 
 import FreeCAD as App
 import FreeCADGui as Gui
-from PySide2 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 class RepairLinksDialog(QtWidgets.QDialog):
     def __init__(self, broken_links, doc):
